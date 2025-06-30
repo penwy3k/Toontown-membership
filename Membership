@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Toontown Offline Membership Shop</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #e0f7fa; text-align: center; padding: 20px; }
+    h1 { color: #00796b; }
+    .plan { background: white; margin: 15px auto; padding: 20px; max-width: 300px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);}
+    .plan h2 { margin-top: 0; }
+    button { background: #00796b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #004d40; }
+    #wallet { margin: 20px auto; max-width: 300px; background: #004d40; color: white; padding: 10px; border-radius: 8px;}
+    input[type="number"], input[type="text"] { padding: 8px; width: 80%; margin: 10px 0; border-radius: 6px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>Toontown Offline Membership Shop</h1>
+
+  <div id="wallet">
+    <p><strong>Username:</strong> <span id="usernameDisplay">Guest</span></p>
+    <p><strong>Coins:</strong> <span id="coinsDisplay">0</span></p>
+    <button onclick="editWallet()">Edit Wallet</button>
+    <div id="walletEditor" style="display:none;">
+      <input type="text" id="usernameInput" placeholder="Enter username" /><br/>
+      <input type="number" id="coinsInput" placeholder="Enter coins" /><br/>
+      <button onclick="saveWallet()">Save</button>
+    </div>
+  </div>
+
+  <div class="plan">
+    <h2>1 Month Membership</h2>
+    <p>10,000 Coins</p>
+    <button onclick="buyMembership('1 Month', 10000, '1MONTH-1234')">Buy Now</button>
+  </div>
+  <div class="plan">
+    <h2>6 Months Membership</h2>
+    <p>50,000 Coins</p>
+    <button onclick="buyMembership('6 Months', 50000, '6MONTHS-5678')">Buy Now</button>
+  </div>
+  <div class="plan">
+    <h2>12 Months Membership</h2>
+    <p>75,000 Coins</p>
+    <button onclick="buyMembership('12 Months', 75000, '12MONTHS-9012')">Buy Now</button>
+  </div>
+
+  <div style="margin-top: 30px;">
+    <input type="text" id="redeemCodeInput" placeholder="Enter membership code" />
+    <button onclick="redeemCode()">Redeem</button>
+  </div>
+
+  <p id="message" style="margin-top:20px; font-weight:bold;"></p>
+
+  <script>
+    // Load wallet data from localStorage or defaults
+    let wallet = JSON.parse(localStorage.getItem('wallet')) || {
+      username: 'Guest',
+      coins: 0,
+      membershipExpiry: null
+    };
+
+    function updateDisplay() {
+      document.getElementById('usernameDisplay').innerText = wallet.username;
+      document.getElementById('coinsDisplay').innerText = wallet.coins;
+    }
+
+    function editWallet() {
+      document.getElementById('walletEditor').style.display = 'block';
+      document.getElementById('usernameInput').value = wallet.username;
+      document.getElementById('coinsInput').value = wallet.coins;
+    }
+
+    function saveWallet() {
+      const newName = document.getElementById('usernameInput').value.trim() || 'Guest';
+      const newCoins = parseInt(document.getElementById('coinsInput').value);
+      if (isNaN(newCoins) || newCoins < 0) {
+        alert('Please enter a valid number of coins.');
+        return;
+      }
+      wallet.username = newName;
+      wallet.coins = newCoins;
+      localStorage.setItem('wallet', JSON.stringify(wallet));
+      updateDisplay();
+      document.getElementById('walletEditor').style.display = 'none';
+      showMessage('Wallet updated!');
+    }
+
+    function buyMembership(planName, cost, code) {
+      if (wallet.coins < cost) {
+        showMessage('Not enough coins to buy ' + planName);
+        return;
+      }
+      wallet.coins -= cost;
+      wallet.membershipExpiry = calculateExpiryDate(planName);
+      localStorage.setItem('wallet', JSON.stringify(wallet));
+      updateDisplay();
+      showMessage(`Purchased ${planName}! Use code: ${code}`);
+    }
+
+    function calculateExpiryDate(planName) {
+      const now = new Date();
+      switch(planName) {
+        case '1 Month':
+          now.setMonth(now.getMonth() + 1);
+          break;
+        case '6 Months':
+          now.setMonth(now.getMonth() + 6);
+          break;
+        case '12 Months':
+          now.setFullYear(now.getFullYear() + 1);
+          break;
+      }
+      return now.toISOString().split('T')[0];
+    }
+
+    function redeemCode() {
+      const code = document.getElementById('redeemCodeInput').value.trim().toUpperCase();
+      if (!code) {
+        showMessage('Please enter a membership code.');
+        return;
+      }
+      const codes = {
+        '1MONTH-1234': '1 Month',
+        '6MONTHS-5678': '6 Months',
+        '12MONTHS-9012': '12 Months'
+      };
+      if (!(code in codes)) {
+        showMessage('Invalid membership code.');
+        return;
+      }
+      const planName = codes[code];
+      const cost = planName === '1 Month' ? 10000 : planName === '6 Months' ? 50000 : 75000;
+      if (wallet.coins < cost) {
+        showMessage('Not enough coins to redeem this code.');
+        return;
+      }
+      wallet.coins -= cost;
+      wallet.membershipExpiry = calculateExpiryDate(planName);
+      localStorage.setItem('wallet', JSON.stringify(wallet));
+      updateDisplay();
+      showMessage(`Membership code redeemed! You got ${planName} membership.`);
+    }
+
+    function showMessage(msg) {
+      const el = document.getElementById('message');
+      el.innerText = msg;
+      setTimeout(() => { el.innerText = ''; }, 6000);
+    }
+
+    updateDisplay();
+  </script>
+</body>
+</html>
